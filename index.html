@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#0a0a1a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="EnglishMaster"/>
+  <meta name="description" content="Yapay zeka destekli ücretsiz İngilizce öğrenme uygulaması"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <title>EnglishMaster AI</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body,#root{height:100%;width:100%;overflow:hidden}
+    body{
+      background:#0a0a1a;
+      font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+      color:#e2e8f0;
+      overscroll-behavior:none;
+    }
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,212,255,.2)}50%{box-shadow:0 0 40px rgba(0,212,255,.5)}}
+    @keyframes bgFloat{0%{transform:translate(-50%,-50%) scale(1)}100%{transform:translate(-50%,-50%) scale(1.4)}}
+
+    .screen{position:absolute;inset:0;overflow:hidden;display:flex;flex-direction:column}
+    .fade-in{animation:fadeUp .4s ease forwards}
+    
+    /* HOME */
+    #home{background:linear-gradient(160deg,#0a0a1a 0%,#0d1117 60%,#0a0a1e 100%)}
+    .bg-orb{position:absolute;border-radius:50%;pointer-events:none;animation:bgFloat 5s ease-in-out infinite alternate}
+
+    .home-header{position:relative;z-index:1;text-align:center;padding:env(safe-area-inset-top,24px) 20px 20px}
+    .app-title{font-size:30px;font-weight:900;letter-spacing:-1px;
+      background:linear-gradient(135deg,#00d4ff,#7c3aed 50%,#f97316);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .app-sub{font-size:13px;color:#4b5563;margin-top:4px}
+
+    .stats-row{display:flex;gap:10px;justify-content:center;margin:16px 20px 0;position:relative;z-index:1}
+    .stat-box{flex:1;max-width:100px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+      border-radius:14px;padding:10px 8px;text-align:center}
+    .stat-icon{font-size:18px}
+    .stat-val{font-size:18px;font-weight:800;color:#fff;line-height:1.2}
+    .stat-label{font-size:10px;color:#4b5563;margin-top:2px}
+
+    .modules-scroll{flex:1;overflow-y:auto;padding:16px 16px env(safe-area-inset-bottom,20px);
+      position:relative;z-index:1;-webkit-overflow-scrolling:touch}
+    .section-title{font-size:12px;font-weight:700;color:#4b5563;letter-spacing:2px;
+      text-transform:uppercase;margin-bottom:12px;padding-left:4px}
+    .modules-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+    .mod-card{border-radius:20px;padding:18px 16px;cursor:pointer;position:relative;overflow:hidden;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.03);
+      transition:transform .2s ease,box-shadow .2s ease;
+      -webkit-user-select:none;user-select:none;
+      animation:fadeUp .4s ease both}
+    .mod-card:active{transform:scale(.96)!important}
+    .mod-glow{position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.15}
+    .mod-icon{font-size:30px;margin-bottom:10px;display:block}
+    .mod-title{font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:3px}
+    .mod-desc{font-size:11px;color:#6b7280}
+    .mod-badge{display:inline-block;margin-top:10px;padding:3px 10px;border-radius:20px;
+      font-size:10px;font-weight:700}
+
+    .level-card{border-radius:16px;padding:16px;margin-bottom:20px;
+      background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(124,58,237,.08));
+      border:1px solid rgba(0,212,255,.2)}
+    .level-title{font-size:14px;font-weight:700;color:#00d4ff;margin-bottom:8px}
+    .level-bar-bg{background:rgba(255,255,255,.06);border-radius:99px;height:6px;overflow:hidden}
+    .level-bar-fill{height:100%;border-radius:99px;
+      background:linear-gradient(90deg,#00d4ff,#7c3aed);
+      transition:width .6s ease}
+    .level-info{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#6b7280}
+
+    /* CHAT */
+    #chat{background:#0d1117}
+    .chat-header{background:rgba(13,17,23,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-bottom:1px solid rgba(255,255,255,.06);
+      padding:env(safe-area-inset-top,14px) 16px 14px;
+      display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:10;position:relative}
+    .back-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+      border-radius:10px;color:#e2e8f0;width:38px;height:38px;font-size:18px;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .chat-mod-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;
+      justify-content:center;font-size:20px;flex-shrink:0}
+    .chat-mod-info{flex:1;min-width:0}
+    .chat-mod-name{font-size:14px;font-weight:700;color:#e2e8f0}
+    .chat-mod-sub{font-size:11px;color:#6b7280}
+    .ai-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:#22c55e;flex-shrink:0}
+    .ai-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
+
+    .messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;
+      -webkit-overflow-scrolling:touch}
+    
+    .bubble-wrap{display:flex;gap:8px;align-items:flex-end;animation:fadeUp .3s ease}
+    .bubble-wrap.user{flex-direction:row-reverse}
+    .avatar{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;
+      justify-content:center;font-size:15px;flex-shrink:0}
+    .bubble{max-width:78%;padding:11px 14px;font-size:14px;line-height:1.7;word-break:break-word}
+    .bubble.ai{border-radius:4px 16px 16px 16px;background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08)}
+    .bubble.user{border-radius:16px 16px 4px 16px;color:#fff}
+    .bubble code{background:#1a1a2e;padding:2px 6px;border-radius:4px;
+      font-family:monospace;color:#00d4ff;font-size:13px}
+    .bubble strong{font-weight:700}
+    .bubble em{font-style:italic;color:#a5b4fc}
+
+    .typing{display:flex;gap:5px;align-items:center;padding:14px 16px}
+    .typing-dot{width:7px;height:7px;border-radius:50%;animation:pulse 1.2s ease-in-out infinite}
+
+    .quick-btns{padding:0 16px 10px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;
+      -webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .quick-btns::-webkit-scrollbar{display:none}
+    .quick-btn{white-space:nowrap;padding:7px 14px;border-radius:20px;
+      font-size:12px;font-weight:600;cursor:pointer;border:1px solid;flex-shrink:0;
+      transition:opacity .2s;-webkit-user-select:none;user-select:none}
+    .quick-btn:active{opacity:.7}
+
+    .input-area{padding:12px 14px env(safe-area-inset-bottom,14px);
+      background:rgba(13,17,23,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-top:1px solid rgba(255,255,255,.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0}
+    .msg-input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+      border-radius:14px;padding:11px 14px;color:#e2e8f0;font-size:14px;
+      font-family:inherit;resize:none;outline:none;max-height:110px;
+      overflow-y:auto;line-height:1.5;transition:border-color .2s;
+      -webkit-appearance:none}
+    .msg-input::placeholder{color:#4b5563}
+    .send-btn{width:44px;height:44px;border-radius:12px;border:none;font-size:20px;
+      cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+      transition:transform .15s,opacity .15s;-webkit-user-select:none;user-select:none}
+    .send-btn:active{transform:scale(.92)}
+    .send-btn:disabled{opacity:.4;cursor:not-allowed}
+
+    /* INSTALL BANNER */
+    .install-banner{position:fixed;bottom:0;left:0;right:0;z-index:100;
+      padding:14px 16px env(safe-area-inset-bottom,16px);
+      background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(124,58,237,.15));
+      border-top:1px solid rgba(0,212,255,.3);backdrop-filter:blur(20px);
+      display:flex;align-items:center;gap:12px;animation:fadeUp .4s ease}
+    .install-text{flex:1;font-size:13px;color:#e2e8f0}
+    .install-text strong{display:block;color:#00d4ff;font-size:14px;margin-bottom:2px}
+    .install-btn{background:linear-gradient(135deg,#00d4ff,#7c3aed);border:none;
+      border-radius:10px;color:#fff;padding:9px 16px;font-size:13px;font-weight:700;
+      cursor:pointer;white-space:nowrap;-webkit-user-select:none;user-select:none}
+    .install-close{background:transparent;border:none;color:#6b7280;font-size:20px;
+      cursor:pointer;padding:4px;line-height:1}
+  </style>
+</head>
+<body>
+
+<!-- HOME SCREEN -->
+<div class="screen" id="home">
+  <!-- Background orbs -->
+  <div class="bg-orb" style="width:280px;height:280px;top:15%;left:20%;background:radial-gradient(circle,rgba(0,212,255,.12),transparent 70%);animation-duration:6s"></div>
+  <div class="bg-orb" style="width:220px;height:220px;top:60%;left:75%;background:radial-gradient(circle,rgba(124,58,237,.1),transparent 70%);animation-duration:8s;animation-direction:alternate-reverse"></div>
+  <div class="bg-orb" style="width:160px;height:160px;top:40%;left:50%;background:radial-gradient(circle,rgba(249,115,22,.08),transparent 70%);animation-duration:5s"></div>
+
+  <div class="home-header">
+    <div style="font-size:42px;margin-bottom:8px">🇬🇧</div>
+    <div class="app-title">EnglishMaster AI</div>
+    <div class="app-sub">Yapay zeka destekli • Tamamen ücretsiz</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-icon">⚡</div>
+      <div class="stat-val" id="xp-display">0</div>
+      <div class="stat-label">XP Puan</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-val" id="streak-display">0</div>
+      <div class="stat-label">Gün Serisi</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-icon">📖</div>
+      <div class="stat-val">8</div>
+      <div class="stat-label">Modül</div>
+    </div>
+  </div>
+
+  <div class="modules-scroll">
+    <!-- Progress -->
+    <div class="level-card" style="margin-bottom:16px">
+      <div class="level-title">🎓 Seviyeniz: Başlangıç</div>
+      <div class="level-bar-bg"><div class="level-bar-fill" id="level-bar" style="width:5%"></div></div>
+      <div class="level-info"><span id="level-xp-text">0 / 200 XP</span><span>Seviye 1</span></div>
+    </div>
+
+    <div class="section-title">Ders Modülleri</div>
+    <div class="modules-grid" id="modules-grid"></div>
+
+    <div style="text-align:center;padding:16px 0;color:#374151;font-size:12px">
+      🤖 Claude AI ile desteklenmektedir
+    </div>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div class="screen" id="chat" style="display:none">
+  <div class="chat-header">
+    <button class="back-btn" onclick="goHome()">←</button>
+    <div class="chat-mod-icon" id="chat-icon"></div>
+    <div class="chat-mod-info">
+      <div class="chat-mod-name" id="chat-title"></div>
+      <div class="chat-mod-sub" id="chat-sub"></div>
+    </div>
+    <div class="ai-badge"><div class="ai-dot"></div>AI</div>
+  </div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="quick-btns" id="quick-btns" style="display:none"></div>
+
+  <div class="input-area">
+    <textarea class="msg-input" id="msg-input" placeholder="Sorunuzu yazın..." rows="1"
+      oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>➤</button>
+  </div>
+</div>
+
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="install-banner" style="display:none">
+  <div>📲</div>
+  <div class="install-text">
+    <strong>Uygulamayı Yükle</strong>
+    Ana ekrana ekle, uygulama gibi kullan!
+  </div>
+  <button class="install-btn" id="install-btn">Yükle</button>
+  <button class="install-close" onclick="document.getElementById('install-banner').style.display='none'">×</button>
+</div>
+
+<script>
+const MODULES = [
+  {id:"alphabet",  icon:"🔤", title:"Alfabe & Telaffuz",  desc:"Harfler ve sesler",       color:"#FF6B6B"},
+  {id:"vocabulary",icon:"📚", title:"Kelime Hazinesi",     desc:"Tema bazlı kelimeler",    color:"#4ECDC4"},
+  {id:"suffixes",  icon:"🔗", title:"Ekler & Önekler",     desc:"Suffixes & Prefixes",     color:"#45B7D1"},
+  {id:"grammar",   icon:"⚙️", title:"Dilbilgisi",          desc:"Tenses & Rules",          color:"#96CEB4"},
+  {id:"sentences", icon:"💬", title:"Cümle Kurma",         desc:"Sentence Building",       color:"#FFEAA7"},
+  {id:"conversation",icon:"🗣️",title:"Konuşma Pratiği",   desc:"Diyalog Alıştırmaları",   color:"#DDA0DD"},
+  {id:"quiz",      icon:"🏆", title:"Test & Quiz",         desc:"Bilgini Sına",            color:"#F0A500"},
+  {id:"writing",   icon:"✍️", title:"Yazma Pratiği",       desc:"Writing Practice",        color:"#E17055"},
+];
+
+const MODULE_PROMPTS = {
+  alphabet:"Alfabe ve telaffuz konusunu öğret. İngilizce harflerin nasıl okunduğunu, sesli ve sessiz harfleri, telaffuz kurallarını, IPA sembollerini anlat. Pratik örnekler kullan.",
+  vocabulary:"Tema bazlı kelime öğret. Günlük hayat, renkler, sayılar, aile, yiyecekler, meslekler gibi konulardan kelimeler öğret. Her kelimeyi Türkçe çevirisi ve örnek cümleyle göster.",
+  suffixes:"İngilizce ekler ve önekler öğret. -tion, -ing, -ed, -ly, -er, -est, -ful, -less, un-, re-, pre-, dis-, mis- gibi yaygın ekleri örneklerle açıkla.",
+  grammar:"İngilizce dilbilgisi öğret. Present Simple, Past Simple, Future, Present Continuous zamanlarını, artikel kullanımını, zamirleri, sıfatları, zarfları anlat.",
+  sentences:"Cümle kurma öğret. Subject+Verb+Object yapısını, soru cümlelerini, olumsuz cümleleri, farklı cümle yapılarını öğret. Bol örnek ver ve alıştırma yaptır.",
+  conversation:"Günlük konuşma pratikleri yap. Selamlama, tanışma, alışveriş, yön sorma, restoran gibi senaryolarda diyalog öğret. Türkçe açıklamalarla göster.",
+  quiz:"Kısa test hazırla. Karışık konulardan 5 soruluk çoktan seçmeli veya boşluk doldurmalı sorular sor. Her sorudan sonra açıkla, sonunda değerlendirme yap.",
+  writing:"Yazma pratiği yaptır. Kısa paragraf, günlük yazma, e-posta yazma veya cümle tamamlama egzersizleri ver. Hataları düzelt ve açıkla.",
+};
+
+const SYSTEM = `Sen profesyonel bir İngilizce öğretmenisin. Öğrenciye Türkçe açıklamalar yaparak İngilizce öğretiyorsun.
+- Açıklamaları Türkçe yap, örnekleri İngilizce ver
+- Her İngilizce kelimenin/cümlenin Türkçe çevirisini göster
+- Adım adım öğret, sabırlı ve teşvik edici ol
+- Kısa ve anlaşılır cevaplar ver
+- Gerektiğinde alıştırma öner
+- Başlangıç seviyesini varsay`;
+
+let state = {
+  xp: parseInt(localStorage.getItem('em_xp')||'0'),
+  streak: parseInt(localStorage.getItem('em_streak')||'1'),
+  activeModule: null,
+  messages: [],
+  loading: false,
+  deferredPrompt: null,
+};
+
+// Render modules
+function renderModules() {
+  const grid = document.getElementById('modules-grid');
+  grid.innerHTML = MODULES.map((m,i) => `
+    <div class="mod-card fade-in" style="animation-delay:${i*0.06}s;border-color:${m.color}22"
+         onclick="startModule('${m.id}')" ontouchstart="">
+      <div class="mod-glow" style="background:radial-gradient(circle,${m.color},transparent)"></div>
+      <span class="mod-icon">${m.icon}</span>
+      <div class="mod-title">${m.title}</div>
+      <div class="mod-desc">${m.desc}</div>
+      <div class="mod-badge" style="background:${m.color}18;color:${m.color};border-color:${m.color}33">
+        Başla →
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateStats() {
+  document.getElementById('xp-display').textContent = state.xp;
+  document.getElementById('streak-display').textContent = state.streak;
+  const pct = Math.min((state.xp / 200) * 100, 100);
+  document.getElementById('level-bar').style.width = pct + '%';
+  document.getElementById('level-xp-text').textContent = `${state.xp} / 200 XP`;
+}
+
+function addXP(amount) {
+  state.xp += amount;
+  localStorage.setItem('em_xp', state.xp);
+  updateStats();
+}
+
+async function startModule(id) {
+  const mod = MODULES.find(m => m.id === id);
+  if (!mod) return;
+  state.activeModule = mod;
+  state.messages = [];
+
+  // Switch screen
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('chat').style.display = 'flex';
+
+  // Set header
+  const icon = document.getElementById('chat-icon');
+  icon.textContent = mod.icon;
+  icon.style.background = mod.color + '22';
+  icon.style.border = `1px solid ${mod.color}44`;
+  document.getElementById('chat-title').textContent = mod.title;
+  document.getElementById('chat-sub').textContent = mod.desc;
+
+  // Style send btn
+  document.getElementById('send-btn').style.background =
+    `linear-gradient(135deg,${mod.color},${mod.color}aa)`;
+
+  // Input focus color
+  document.getElementById('msg-input').style.borderColor = mod.color + '44';
+  document.getElementById('msg-input').value = '';
+  document.getElementById('msg-input').disabled = true;
+  document.getElementById('send-btn').disabled = true;
+
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('quick-btns').style.display = 'none';
+
+  // Show typing
+  showTyping();
+  state.loading = true;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system: SYSTEM,
+        messages:[{
+          role:'user',
+          content:`Modül: ${mod.title}. ${MODULE_PROMPTS[mod.id]} Başlangıç seviyesinde kabul ederek başla, merhaba de.`
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(b=>b.type==='text')?.text || 'Merhaba! Başlayalım 😊';
+    removeTyping();
+    addMessage('ai', text);
+    addXP(10);
+    showQuickBtns();
+  } catch(e) {
+    removeTyping();
+    addMessage('ai','⚠️ Bağlantı hatası. İnternet bağlantınızı kontrol edin.');
+  }
+
+  state.loading = false;
+  document.getElementById('msg-input').disabled = false;
+  document.getElementById('msg-input').focus();
+  updateSendBtn();
+}
+
+function addMessage(role, text) {
+  const mod = state.activeModule;
+  const wrap = document.createElement('div');
+  wrap.className = `bubble-wrap ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.style.background = role==='ai' ? (mod.color+'22') : 'rgba(255,255,255,.08)';
+  avatar.textContent = role==='ai' ? mod.icon : '👤';
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}`;
+  if(role==='user') {
+    bubble.style.background = `linear-gradient(135deg,${mod.color}cc,${mod.color}99)`;
+  }
+  bubble.innerHTML = formatText(text);
+
+  wrap.appendChild(avatar);
+  wrap.appendChild(bubble);
+
+  state.messages.push({role: role==='ai'?'assistant':'user', content: text});
+  document.getElementById('messages').appendChild(wrap);
+  document.getElementById('messages').scrollTop = 9999999;
+}
+
+function showTyping() {
+  const mod = state.activeModule;
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap';
+  wrap.id = 'typing-indicator';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.style.background = mod.color+'22';
+  avatar.textContent = mod.icon;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ai typing';
+  [0,0.2,0.4].forEach((d,i) => {
+    const dot = document.createElement('div');
+    dot.className = 'typing-dot';
+    dot.style.background = mod.color;
+    dot.style.animationDelay = d+'s';
+    bubble.appendChild(dot);
+  });
+
+  wrap.appendChild(avatar);
+  wrap.appendChild(bubble);
+  document.getElementById('messages').appendChild(wrap);
+  document.getElementById('messages').scrollTop = 9999999;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-indicator');
+  if(el) el.remove();
+}
+
+function showQuickBtns() {
+  const mod = state.activeModule;
+  const btns = ['Devam et →','Örnek ver','Alıştırma yap','Soru sormak istiyorum','Baştan anlat'];
+  const container = document.getElementById('quick-btns');
+  container.innerHTML = btns.map(b =>
+    `<button class="quick-btn" style="color:${mod.color};border-color:${mod.color}44;background:${mod.color}12"
+      onclick="quickSend('${b}')">${b}</button>`
+  ).join('');
+  container.style.display = 'flex';
+}
+
+function quickSend(text) {
+  document.getElementById('msg-input').value = text;
+  document.getElementById('quick-btns').style.display = 'none';
+  sendMessage();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if(!text || state.loading) return;
+
+  input.value = '';
+  autoResize(input);
+  document.getElementById('quick-btns').style.display = 'none';
+  addMessage('user', text);
+  state.loading = true;
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
+
+  const apiMessages = [
+    {role:'user', content:`Modül: ${state.activeModule.title}. ${MODULE_PROMPTS[state.activeModule.id]}`},
+    ...state.messages
+  ];
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system: SYSTEM,
+        messages: apiMessages
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.find(b=>b.type==='text')?.text || '...';
+    removeTyping();
+    addMessage('ai', reply);
+    addXP(5);
+  } catch(e) {
+    removeTyping();
+    addMessage('ai','⚠️ Hata oluştu. Lütfen tekrar deneyin.');
+  }
+
+  state.loading = false;
+  document.getElementById('send-btn').disabled = false;
+}
+
+function goHome() {
+  document.getElementById('chat').style.display = 'none';
+  document.getElementById('home').style.display = 'flex';
+}
+
+function formatText(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/`(.*?)`/g,'<code>$1</code>')
+    .replace(/\n/g,'<br>');
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+  updateSendBtn();
+}
+
+function updateSendBtn() {
+  const val = document.getElementById('msg-input').value.trim();
+  document.getElementById('send-btn').disabled = !val || state.loading;
+}
+
+function handleKey(e) {
+  if(e.key==='Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+  updateSendBtn();
+}
+
+// PWA Install
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  state.deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'flex';
+});
+
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if(state.deferredPrompt) {
+    state.deferredPrompt.prompt();
+    const {outcome} = await state.deferredPrompt.userChoice;
+    if(outcome==='accepted') {
+      document.getElementById('install-banner').style.display = 'none';
+    }
+    state.deferredPrompt = null;
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').style.display = 'none';
+});
+
+// Service Worker
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+// Streak logic
+const today = new Date().toDateString();
+const lastDay = localStorage.getItem('em_lastday');
+if(lastDay !== today) {
+  if(lastDay === new Date(Date.now()-86400000).toDateString()) {
+    state.streak++;
+  } else if(!lastDay) {
+    state.streak = 1;
+  }
+  localStorage.setItem('em_lastday', today);
+  localStorage.setItem('em_streak', state.streak);
+}
+
+// Init
+renderModules();
+updateStats();
+</script>
+</body>
+</html>
